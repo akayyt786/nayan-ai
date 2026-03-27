@@ -96,7 +96,7 @@ export default function App() {
       timer = setTimeout(() => {
         console.log('[Live] Auto-triggering scan...');
         setTriggerScan(Date.now()); // Signal to CameraScreen to take photo
-      }, 4000);
+      }, 2000); // Reduced to 2s for more "Live" feel
     }
     return () => clearTimeout(timer);
   }, [autoScanEnabled, stage, isSpeaking]);
@@ -130,14 +130,16 @@ export default function App() {
       
       const cleanText = simplifyText(rawText);
       
-      // DEDUPLICATION: Don't read if it's the same as what we just read
-      // We check if the first 30 chars are similar to avoid noise issues
+      // DEDUPLICATION & CHANGE DETECTION
+      // If the text is the same as before, don't re-read
       if (cleanText.slice(0, 30) === lastSpokenText.slice(0, 30)) {
-        console.log('[Live] Same text detected, skipping speech.');
         setStage(STAGES.READY);
         return;
       }
 
+      // If we are here, it's NEW text. 
+      // Stop anything current and start new reading immediately
+      stopSpeaking(); 
       setResultText(cleanText);
       setLastSpokenText(cleanText);
 
@@ -196,10 +198,12 @@ export default function App() {
         </View>
 
         {/* Status bar - Minimalist */}
-        {(statusMessage || stage === STAGES.BOOTING) && (
+        {(statusMessage || stage === STAGES.BOOTING || (stage === STAGES.READY && autoScanEnabled)) && (
           <View style={styles.statusBar}>
             <Text style={styles.statusText}>
-              {statusMessage || 'Initializing...'}
+              {stage === STAGES.READY && autoScanEnabled && !isSpeaking
+                ? '🔍 Looking for text...'
+                : statusMessage || 'Initializing...'}
             </Text>
           </View>
         )}
