@@ -32,87 +32,119 @@ function isWeakText(text) {
   return !text || text.length < 8;
 }
 
+function cleanText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getScore(text) {
+  if (!text) return 0;
+  const hindiChars = (text.match(/[\u0900-\u097F]/g) || []).length;
+  return hindiChars;
+}
+
+function processBlocks(result) {
+  let finalText = '';
+  if (result.blocks && result.blocks.length > 0) {
+    // Sort blocks: Primary sort by Top (Y), secondary sort by Left (X)
+    const sortedBlocks = result.blocks.sort((a, b) => {
+      const yDiff = a.frame.top - b.frame.top;
+      if (Math.abs(yDiff) > 25) return yDiff; 
+      return a.frame.left - b.frame.left;     
+    });
+
+    sortedBlocks.forEach((block, index) => {
+      const blockText = block.text;
+      if (!blockText || blockText.length < 2) return;
+      
+      console.log(`[BLOCK ${index}]`, blockText);
+      
+      // 🟡 FILTER ONLY HINDI BLOCKS
+      if (detectHindi(blockText)) {
+        finalText += blockText + '\n';
+      }
+    });
+  }
+  return cleanText(finalText);
+}
+
 /**
  * Main function — call this with a photo path, get text back
  * @param {string} imagePath - local file path from camera
  * @returns {string} - extracted Hindi/Punjabi text
  */
 export async function extractTextFromImage(imagePath) {
-  console.log('[OCR] Input:', imagePath);
-
   try {
-    // STEP 1: preprocess image
+    const uri = `file://${imagePath}`;
+    console.log('[OCR] Processing image:', uri);
+
+    // 🔵 PASS 1: Original image
+    const result1 = await TextRecognition.recognize(uri);
+    console.log('[OCR] PASS 1 Blocks count:', result1.blocks?.length || 0);
+
+    // 🔵 PASS 2: Resized high-quality image
     const processedImage = await ImageResizer.createResizedImage(
-      `file://${imagePath}`,
-      1000,  // optimized size (faster than 1200)
-      1400,
+      uri,
+      1200,
+      1600,
       'JPEG',
-      95,    // higher quality for better OCR
+      100, // Highest quality
       0
     );
+    const result2 = await TextRecognition.recognize(processedImage.uri);
+    console.log('[OCR] PASS 2 Blocks count:', result2.blocks?.length || 0);
 
-    // simulate sharpening by re-saving with high quality
-    const enhancedUri = processedImage.uri;
+    // Extract Hindi-only blocks
+    let text1 = processBlocks(result1);
+    let text2 = processBlocks(result2);
 
-    console.log('[OCR] Image sharpened, running ML Kit...');
-
-    // STEP 2: primary OCR (ML Kit)
-    const result = await TextRecognition.recognize(enhancedUri);
-    
-    // ML Kit returns 'blocks'. We must sort them to ensure natural reading order.
-    // Otherwise, it might read randomly if the page has columns.
-    let extractedText = '';
-    if (result.blocks && result.blocks.length > 0) {
-      console.log(`[OCR] Found ${result.blocks.length} text blocks. Sorting...`);
-      
-      // Sort blocks: Primary sort by Top (Y), secondary sort by Left (X)
-      // We use a small threshold (20px) for Y so that items on the same line 
-      // but slightly misaligned are sorted by X correctly.
-      const sortedBlocks = result.blocks.sort((a, b) => {
-        const yDiff = a.frame.top - b.frame.top;
-        if (Math.abs(yDiff) > 25) return yDiff; // Different line
-        return a.frame.left - b.frame.left;     // Same line, sort Left-to-Right
-      });
-
-      extractedText = sortedBlocks.map(block => block.text).join('\n').trim();
-    } else {
-      extractedText = result.text ? result.text.trim() : '';
+    // 🔴 FALLBACK: if no Hindi detected, use full raw text
+    if (!text1 || text1.length < 5) {
+      console.log('[OCR] Pass 1: No strong Hindi detected in blocks, using raw text fallback');
+      text1 = cleanText(result1.text);
+    }
+    if (!text2 || text2.length < 5) {
+      console.log('[OCR] Pass 2: No strong Hindi detected in blocks, using raw text fallback');
+      text2 = cleanText(result2.text);
     }
 
-    console.log('[ML KIT]', extractedText);
+    // 🟡 SELECT BEST RESULT
+    let bestText = getScore(text2) > getScore(text1) ? text2 : text1;
+    console.log('[ML KIT BEST]', bestText);
 
-    // 🟡 STEP 2 — CHECK QUALITY + LANGUAGE
-    const hasHindi = detectHindi(extractedText);
-    const weak = isWeakText(extractedText);
+    // 🟡 CHECK QUALITY + LANGUAGE
+    const hasHindi = detectHindi(bestText);
+    const weak = isWeakText(bestText);
 
-    // 🔴 STEP 3 — FALLBACK TO PADDLEOCR
+    // 🔴 STEP 3: FALLBACK TO PADDLEOCR
     if (weak || !hasHindi) {
       console.log('Switching to PaddleOCR...');
       const paddleText = await runPaddleOCR(imagePath);
 
-      if (paddleText && paddleText.length > extractedText.length) {
+      if (paddleText && paddleText.length > bestText.length) {
         console.log('[PADDLE]', paddleText);
-        extractedText = paddleText;
+        bestText = paddleText;
       }
     }
 
-    if (!extractedText || extractedText.length < 5) {
+    if (!bestText || bestText.length < 3) {
       console.warn('[OCR] No significant text found in image');
       return null;
     }
 
-    // STEP 4: clean text
-    extractedText = extractedText
-      .replace(/\n+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    // STEP 4: Final clean
+    bestText = cleanText(bestText);
 
-    console.log('[OCR] Output length:', extractedText.length);
+    console.log('[OCR] Final length:', bestText.length);
+    console.log('[OCR FINAL]', bestText);
 
-    return extractedText;
+    return bestText;
 
   } catch (error) {
-    console.error('[OCR] Error during text extraction:', error);
-    throw new Error('Could not read text from photo. Please try again with better lighting.');
+    console.error('[OCR ERROR]', error);
+    throw new Error('Could not read text properly');
   }
 }
