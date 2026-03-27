@@ -102,7 +102,9 @@ export default function App() {
   }, [autoScanEnabled, stage, isSpeaking]);
 
   const handlePhotoTaken = useCallback(async (imagePath) => {
-    stopSpeaking();
+    // DO NOT stopSpeaking() here anymore. We wait for it to finish naturally.
+    if (isSpeaking || stage !== STAGES.READY) return; 
+    
     setResultText('');
     
     // Audio Feedback for capture
@@ -131,15 +133,11 @@ export default function App() {
       const cleanText = simplifyText(rawText);
       
       // DEDUPLICATION & CHANGE DETECTION
-      // If the text is the same as before, don't re-read
       if (cleanText.slice(0, 30) === lastSpokenText.slice(0, 30)) {
         setStage(STAGES.READY);
         return;
       }
 
-      // If we are here, it's NEW text. 
-      // Stop anything current and start new reading immediately
-      stopSpeaking(); 
       setResultText(cleanText);
       setLastSpokenText(cleanText);
 
