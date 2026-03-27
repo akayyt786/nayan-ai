@@ -102,19 +102,21 @@ export default function App() {
   }, [autoScanEnabled, stage, isSpeaking]);
 
   const handlePhotoTaken = useCallback(async (imagePath) => {
-    // DO NOT stopSpeaking() here anymore. We wait for it to finish naturally.
-    if (isSpeaking || stage !== STAGES.READY) return; 
+    // Sequential Guard: Don't scan if busy reading or processing
+    if (stage !== STAGES.READY) {
+      console.log('[App] Guard: Blocked scan because stage is', stage);
+      return; 
+    }
     
     setResultText('');
     
-    // Audio Feedback for capture
-    speak('फोटो लिया गया');
-
     try {
       // STAGE 1: OCR
       setStage(STAGES.SCANNING);
-      setStatusMessage('📖 पढ़ रहे हैं...');
-      speak('पाठ पढ़ रहे हैं'); // Audio Feedback before OCR
+      setStatusMessage('📖 Scanning page...');
+      
+      // Non-blocking audio feedback
+      speak('फोटो लिया गया');
       
       const rawText = await extractTextFromImage(imagePath);
 

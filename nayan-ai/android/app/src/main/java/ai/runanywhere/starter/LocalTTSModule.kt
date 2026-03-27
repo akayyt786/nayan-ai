@@ -2,6 +2,7 @@ package ai.runanywhere.starter
 
 import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import com.facebook.react.bridge.*
 import java.io.File
 import java.util.*
@@ -14,9 +15,22 @@ class LocalTTSModule(reactContext: ReactApplicationContext) :
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
     private var systemTTS: TextToSpeech? = null
     private var isSystemTTSReady = false
+    private var pendingPromise: Promise? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     init {
         systemTTS = TextToSpeech(reactContext, this)
+        systemTTS?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            override fun onDone(utteranceId: String?) {
+                pendingPromise?.resolve("finished")
+                pendingPromise = null
+            }
+            override fun onError(utteranceId: String?) {
+                pendingPromise?.reject("TTS_ERROR", "Speech failed")
+                pendingPromise = null
+            }
+        })
     }
 
     override fun onInit(status: Int) {
@@ -24,7 +38,6 @@ class LocalTTSModule(reactContext: ReactApplicationContext) :
             val locale = Locale("hi", "IN")
             systemTTS?.language = locale
             
-            // Try to find a Male voice
             try {
                 val voices = systemTTS?.voices
                 val maleVoice = voices?.find { 
@@ -33,12 +46,10 @@ class LocalTTSModule(reactContext: ReactApplicationContext) :
                 if (maleVoice != null) {
                     systemTTS?.voice = maleVoice
                 }
-            } catch (e: Exception) {
-                // Ignore voice selection errors
-            }
+            } catch (e: Exception) {}
 
-            systemTTS?.setPitch(0.8f)      // Deeper voice
-            systemTTS?.setSpeechRate(0.85f) // Slightly slower/clearer
+            systemTTS?.setPitch(0.8f)      
+            systemTTS?.setSpeechRate(0.85f) 
             isSystemTTSReady = true
         }
     }
@@ -47,61 +58,62 @@ class LocalTTSModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun speak(text: String, promise: Promise) {
-        // Run inference and playback in a background thread to avoid blocking the UI
+        stop(null) // Cancel previous
+        pendingPromise = promise
+
         executorService.execute {
             try {
-                // Step 1: Check cache or generate audio file from text
                 val audioPath = getOrGenerateAudio(text)
                 val audioFile = File(audioPath)
 
                 if (!audioFile.exists()) {
-                    // FALLBACK: Use Android System TTS if custom model is missing
                     if (isSystemTTSReady) {
                         systemTTS?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "local_tts_id")
-                        promise.resolve("played_system_fallback")
+                        // Promise will be resolved by UtteranceProgressListener.onDone
                     } else {
-                        promise.reject("TTS_ERROR", "System TTS not ready and custom model missing")
+                        promise.reject("TTS_ERROR", "System TTS not ready")
+                        pendingPromise = null
                     }
                     return@execute
                 }
 
-                // Step 2: Play audio using MediaPlayer
-                val player = MediaPlayer()
-                try {
-                    player.setDataSource(audioPath)
-                    player.prepare()
-                    player.setOnCompletionListener {
+                mediaPlayer = MediaPlayer().apply {
+                    setDataSource(audioPath)
+                    prepare()
+                    setOnCompletionListener {
                         it.release()
+                        mediaPlayer = null
                         promise.resolve("played")
+                        pendingPromise = null
                     }
-                    player.start()
-                } catch (playError: Exception) {
-                    player.release()
-                    promise.reject("PLAYBACK_ERROR", playError.localizedMessage)
+                    start()
                 }
             } catch (e: Exception) {
-                promise.reject("TTS_ERROR", e.localizedMessage, e)
+                promise.reject("TTS_ERROR", e.localizedMessage)
+                pendingPromise = null
             }
         }
     }
 
-    private fun getOrGenerateAudio(text: String): String {
-        // Use hash of text for simple caching
-        val fileName = "${text.hashCode()}.wav"
-        val cacheFile = File(reactApplicationContext.cacheDir, fileName)
-
-        // If file exists, reuse it (Caching)
-        if (cacheFile.exists()) {
-            return cacheFile.absolutePath
+    @ReactMethod
+    fun stop(promise: Promise?) {
+        try {
+            systemTTS?.stop()
+            mediaPlayer?.let {
+                if (it.isPlaying) it.stop()
+                it.release()
+            }
+            mediaPlayer = null
+            pendingPromise?.resolve("stopped")
+            pendingPromise = null
+            promise?.resolve(true)
+        } catch (e: Exception) {
+            promise?.reject("STOP_ERROR", e.localizedMessage)
         }
+    }
 
-        // TODO: Replace this placeholder with real ONNX inference
-        // 1. Load ONNX model from assets/tts_model/model.onnx
-        // 2. Tokenize Hindi text
-        // 3. Run ONNX Session
-        // 4. Save PCM output to cacheFile as WAV
-        
-        // Return placeholder for now (User must implement the ONNX core)
-        return cacheFile.absolutePath
+    private fun getOrGenerateAudio(text: String): String {
+        val fileName = "${text.hashCode()}.wav"
+        return File(reactApplicationContext.cacheDir, fileName).absolutePath
     }
 }

@@ -59,6 +59,15 @@ export async function speak(text, onStart, onFinish) {
  * No-op stop for now (MediaPlayer release handles it on finish)
  * TODO: Implement native stop if needed for rapid cancellations
  */
-export function stopSpeaking() {
-  console.log('[LocalTTS] Stop requested (MediaPlayer handles release)');
+/**
+ * Stops all current speech immediately (both native TTS and MediaPlayer).
+ */
+export async function stopSpeaking() {
+  try {
+    if (LocalTTS) {
+      await LocalTTS.stop();
+    }
+  } catch (e) {
+    console.error('[LocalTTS] Stop error:', e);
+  }
 }
