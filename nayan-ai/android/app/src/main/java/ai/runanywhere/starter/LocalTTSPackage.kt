@@ -9,7 +9,7 @@ class LocalTTSPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
         return listOf(
             LocalTTSModule(reactContext),
-            PaddleHindiOCRModule(reactContext)
+            PaddleOCRModule(reactContext)
         )
     }
 
