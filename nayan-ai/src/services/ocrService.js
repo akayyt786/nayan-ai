@@ -21,6 +21,7 @@
 
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import ImageResizer from 'react-native-image-resizer';
+import { runPaddleOCR } from './paddleOCRService';
 
 function detectHindi(text) {
   if (!text) return false;
@@ -51,16 +52,16 @@ function processBlocks(result) {
     // Sort blocks: Primary sort by Top (Y), secondary sort by Left (X)
     const sortedBlocks = result.blocks.sort((a, b) => {
       const yDiff = a.frame.top - b.frame.top;
-      if (Math.abs(yDiff) > 25) return yDiff; 
-      return a.frame.left - b.frame.left;     
+      if (Math.abs(yDiff) > 25) return yDiff;
+      return a.frame.left - b.frame.left;
     });
 
     sortedBlocks.forEach((block, index) => {
       const blockText = block.text;
       if (!blockText || blockText.length < 2) return;
-      
+
       console.log(`[BLOCK ${index}]`, blockText);
-      
+
       // 🟡 FILTER ONLY HINDI BLOCKS
       if (detectHindi(blockText)) {
         finalText += blockText + '\n';
@@ -113,6 +114,21 @@ export async function extractTextFromImage(imagePath) {
     // 🟡 SELECT BEST RESULT
     let bestText = getScore(text2) > getScore(text1) ? text2 : text1;
     console.log('[ML KIT BEST]', bestText);
+
+    // 🟡 CHECK QUALITY + LANGUAGE
+    const hasHindi = detectHindi(bestText);
+    const weak = isWeakText(bestText);
+
+    // 🔴 STEP 3: FALLBACK TO PADDLEOCR
+    if (weak || !hasHindi) {
+      console.log('Switching to PaddleOCR...');
+      const paddleText = await runPaddleOCR(imagePath);
+
+      if (paddleText && paddleText.length > bestText.length) {
+        console.log('[PADDLE]', paddleText);
+        bestText = paddleText;
+      }
+    }
 
     if (!bestText || bestText.length < 3) {
       console.warn('[OCR] No significant text found in image');

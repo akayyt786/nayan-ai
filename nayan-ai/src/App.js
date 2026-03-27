@@ -28,15 +28,15 @@ import VideoSplashScreen from './screens/VideoSplashScreen';
 import SoundWave from './components/StatusIndicator';
 import { extractTextFromImage } from './services/ocrService';
 import { simplifyText } from './services/simplifyService';
-import { speak, stopSpeaking, initTTS } from './services/ttsService';
+import { speak, stopSpeaking } from './services/localTTS';
 
 // App stages — controls what the user sees
 const STAGES = {
-  BOOTING:   'booting',   // App loading, voice initializing
-  READY:     'ready',     // Camera visible, waiting for scan
-  SCANNING:  'scanning',  // OCR reading the photo
-  SPEAKING:  'speaking',  // TTS reading aloud
-  ERROR:     'error',     // Something went wrong
+  BOOTING: 'booting',   // App loading, voice initializing
+  READY: 'ready',     // Camera visible, waiting for scan
+  SCANNING: 'scanning',  // OCR reading the photo
+  SPEAKING: 'speaking',  // TTS reading aloud
+  ERROR: 'error',     // Something went wrong
 };
 
 export default function App() {
@@ -70,8 +70,8 @@ export default function App() {
         await requestPermissions();
 
         setStatusMessage('Setting up custom voice...');
-        await initTTS();
-        
+        // LocalTTS doesn't need initTTS call as it loads lazily or via assets
+
         setStage(STAGES.READY);
         setStatusMessage('');
 
@@ -105,19 +105,19 @@ export default function App() {
     // Sequential Guard: Don't scan if busy reading or processing
     if (stage !== STAGES.READY) {
       console.log('[App] Guard: Blocked scan because stage is', stage);
-      return; 
+      return;
     }
-    
+
     setResultText('');
-    
+
     try {
       // STAGE 1: OCR
       setStage(STAGES.SCANNING);
       setStatusMessage('📖 Scanning page...');
-      
+
       // Non-blocking audio feedback
       speak('फोटो लिया गया');
-      
+
       const rawText = await extractTextFromImage(imagePath);
 
       if (!rawText) {
@@ -131,9 +131,9 @@ export default function App() {
       // STAGE 2: Simplification (Local)
       setStatusMessage('🧑‍🏫 समझा रहे हैं...');
       speak('समझा रहे हैं'); // Audio Feedback before simplification
-      
+
       const cleanText = simplifyText(rawText);
-      
+
       // DEDUPLICATION & CHANGE DETECTION
       if (cleanText.slice(0, 30) === lastSpokenText.slice(0, 30)) {
         setStage(STAGES.READY);
@@ -181,7 +181,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
+
       {/* Premium Multi-stop Gradient Background */}
       <LinearGradient
         colors={['#E0F2FF', '#F0E6FF', '#FFF0E6']} // Soft Blue -> Purple -> Warm Orange
@@ -227,7 +227,7 @@ export default function App() {
             <ScrollView style={styles.resultScroll} showsVerticalScrollIndicator={false}>
               <Text style={styles.resultText}>{resultText}</Text>
             </ScrollView>
-            
+
             <TouchableOpacity
               style={styles.replayButton}
               onPress={handleReplay}
