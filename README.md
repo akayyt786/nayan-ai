@@ -67,47 +67,60 @@ NayanAI sits at the bleeding edge of on-device AI integration within mobile ecos
 
 Follow these steps to build and run NayanAI on your local machine.
 
-### **1. Prerequisites**
-Before beginning, ensure you have a proper React Native Android development environment:
-- **Node.js** (v18 or higher)
-- **Java Development Kit (JDK) 17**
-- **Android Studio** (with Android SDK 34, NDK installed)
-- An active Android Emulator or a Physical Device connected via USB debugging.
+### **1. System Requirements**
+Ensure your development environment is fully prepared for React Native:
 
-### **2. Clone the Repository**
+- **Node.js**: v18 or higher (`node -v`)
+- **Java Development Kit (JDK)**: Version 17 is strictly required for React Native 0.83+
+- **Android Studio**: Install the **Android SDK (API 34)**, **Android NDK**, and **CMake**.
+- *(macOS Only)* **Watchman**: `brew install watchman`
+- *(macOS Only)* **Ruby**: Required for macOS environments.
+
+### **2. Verify Environment Health**
+Before proceeding, use the official "doctor" command to verify your React Native environment is correctly configured:
+```bash
+npx react-native doctor
+```
+*Fix any missing Android SDK dependencies or path variables (like `ANDROID_HOME`) flagged by the doctor before continuing.*
+
+### **3. Clone the Repository**
 ```bash
 git clone https://github.com/akayyt786/nayan-ai.git
 cd nayan-ai/nayan-ai
 ```
 
-### **3. Install Dependencies**
-Install all NPM packages.
+### **4. Install Core Packages & Dependencies**
+This project relies on heavy native modules (ML Kit, VisionCamera, ONNX). Clean install all Node packages:
 ```bash
 npm install
 ```
 
-### **4. Inject Required AI Models (Crucial Step)**
-Because NayanAI is 100% offline, the raw AI model weights **must** be manually placed in the Android assets folder before compiling.
+### **5. Inject Offline AI Weights (Critical)**
+Because NayanAI operates 100% offline, the raw AI model weights **must** be manually placed in the Android assets folder before compiling.
 
 1. **TTS Model**:
    Download your preferred VITS ONNX weights and place them here:
    `android/app/src/main/assets/tts_model/model.onnx`
    `android/app/src/main/assets/tts_model/config.json`
 
-2. **LLM Model**:
-   Download the **SmolLM2** `.gguf` file and place it here:
-   (Usually configured to load via the RunAnywhere SDK local directory or asset pipeline).
+2. **LLM Model (Text Simplification)**:
+   The application uses **SmolLM2-135M** (Quantized `.gguf` format) via `@runanywhere/llamacpp`.
+   *(Download the SmolLM2 `.gguf` file to your local device/emulator storage so the app can access it locally without internet.)*
 
-### **5. Run the Application**
+### **6. Build and Run the Application**
 Compile the Native C++ AI libraries and launch the app:
-```bash
-# Start the Metro Bundler
-npm run start
 
-# In a new terminal, build the Android App
+**Terminal 1:** Start the Metro Bundler
+```bash
+npm run start
+```
+*(Optionally, press `a` in this terminal to launch Android directly)*
+
+**Terminal 2:** Build and install the Android App
+```bash
 npm run android
 ```
-*(Note: Initial Gradle builds will take 5-10 minutes due to the compilation of the on-device C++ LLM/ONNX runtimes.)*
+*(Note: Initial Gradle builds will take 5-10 minutes due to the massive compilation of the on-device C++ LLM and ONNX runtimes. Be patient!)*
 
 ---
 
