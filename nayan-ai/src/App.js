@@ -28,7 +28,7 @@ import VideoSplashScreen from './screens/VideoSplashScreen';
 import SoundWave from './components/StatusIndicator';
 import { extractTextFromImage } from './services/ocrService';
 import { simplifyText } from './services/simplifyService';
-import { speak, stopSpeaking } from './services/localTTS';
+import { speak, stopSpeaking, initTTS } from './services/ttsService';
 
 // App stages — controls what the user sees
 const STAGES = {
@@ -70,7 +70,7 @@ export default function App() {
         await requestPermissions();
 
         setStatusMessage('Setting up custom voice...');
-        // LocalTTS doesn't need initTTS call as it loads lazily or via assets
+        await initTTS();
         
         setStage(STAGES.READY);
         setStatusMessage('');
