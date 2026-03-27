@@ -101,7 +101,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [autoScanEnabled, stage, isSpeaking]);
 
-  const handlePhotoTaken = useCallback(async (imagePath) => {
+  const handlePhotoTaken = async (imagePath) => {
     // Sequential Guard: Don't scan if busy reading or processing
     if (stage !== STAGES.READY) {
       console.log('[App] Guard: Blocked scan because stage is', stage);
@@ -163,7 +163,7 @@ export default function App() {
       setStatusMessage(error.message || 'Something went wrong. Please try again.');
       setTimeout(() => setStage(STAGES.READY), 4000);
     }
-  }, []);
+  };
 
   const handleReplay = () => {
     if (resultText) {
