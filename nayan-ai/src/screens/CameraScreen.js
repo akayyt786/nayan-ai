@@ -109,14 +109,17 @@ export default function CameraScreen({ onPhotoTaken, isProcessing, triggerScan, 
         photo={true}
       />
 
-      {/* Visual guidance for visually impaired users */}
+      {/* Premium Guidance Overlays - Glass style */}
       {!isProcessing && (
         <View style={styles.guidanceContainer}>
           <Text style={styles.guidanceText}>📸 Move closer</Text>
           <Text style={styles.guidanceText}>📍 Hold steady</Text>
           <Text style={styles.guidanceText}>💡 Good lighting</Text>
           {autoScanEnabled && (
-            <Text style={[styles.guidanceText, styles.liveBadge]}>● LIVE MODE</Text>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE MONITORING</Text>
+            </View>
           )}
         </View>
       )}
@@ -209,47 +212,68 @@ const styles = StyleSheet.create({
   },
   guidanceContainer: {
     position: 'absolute',
-    top: 40,
+    top: 20,
     left: 20,
     right: 20,
     alignItems: 'center',
-    backgroundColor: 'rgba(26,60,107,0.7)',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)', // Glassmorphism
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   guidanceText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#1A3C6B',
+    fontSize: 15,
+    fontWeight: '600',
     marginVertical: 2,
   },
-  liveBadge: {
-    color: '#00ff00',
-    marginTop: 8,
-    fontSize: 14,
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: 'rgba(0, 255, 0, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00ff00',
+    marginRight: 6,
+  },
+  liveText: {
+    color: '#006400',
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
   hint: {
-    color: '#fff',
-    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
     marginBottom: 16,
     textAlign: 'center',
   },
-  // Minimum 80px diameter for accessibility
   scanButton: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#1A3C6B',
-    borderWidth: 4,
-    borderColor: '#EF9F27',
+    width: 85,
+    height: 85,
+    borderRadius: 42.5,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15, // Glowing effect
   },
   scanButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.3,
   },
   scanButtonText: {
-    fontSize: 36,
+    fontSize: 32,
   },
 });
