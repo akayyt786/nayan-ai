@@ -21,7 +21,6 @@
 
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import ImageResizer from 'react-native-image-resizer';
-import { runPaddleOCR } from './paddleOCRService';
 
 function detectHindi(text) {
   if (!text) return false;
@@ -114,21 +113,6 @@ export async function extractTextFromImage(imagePath) {
     // 🟡 SELECT BEST RESULT
     let bestText = getScore(text2) > getScore(text1) ? text2 : text1;
     console.log('[ML KIT BEST]', bestText);
-
-    // 🟡 CHECK QUALITY + LANGUAGE
-    const hasHindi = detectHindi(bestText);
-    const weak = isWeakText(bestText);
-
-    // 🔴 STEP 3: FALLBACK TO PADDLEOCR
-    if (weak || !hasHindi) {
-      console.log('Switching to PaddleOCR...');
-      const paddleText = await runPaddleOCR(imagePath);
-
-      if (paddleText && paddleText.length > bestText.length) {
-        console.log('[PADDLE]', paddleText);
-        bestText = paddleText;
-      }
-    }
 
     if (!bestText || bestText.length < 3) {
       console.warn('[OCR] No significant text found in image');
