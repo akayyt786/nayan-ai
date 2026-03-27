@@ -21,7 +21,16 @@
 
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import ImageResizer from 'react-native-image-resizer';
-import { fallbackOCR } from './ocrFallbackService';
+import { runPaddleOCR } from './paddleOCRService';
+
+function detectHindi(text) {
+  if (!text) return false;
+  return /[\u0900-\u097F]/.test(text);
+}
+
+function isWeakText(text) {
+  return !text || text.length < 8;
+}
 
 /**
  * Main function — call this with a photo path, get text back
@@ -70,13 +79,20 @@ export async function extractTextFromImage(imagePath) {
       extractedText = result.text ? result.text.trim() : '';
     }
 
-    // STEP 3: fallback if weak result
-    if (!extractedText || extractedText.length < 10) {
-      console.log('Using fallback OCR...');
-      const fallbackText = await fallbackOCR(enhancedUri);
+    console.log('[ML KIT]', extractedText);
 
-      if (fallbackText) {
-        extractedText = fallbackText;
+    // 🟡 STEP 2 — CHECK QUALITY + LANGUAGE
+    const hasHindi = detectHindi(extractedText);
+    const weak = isWeakText(extractedText);
+
+    // 🔴 STEP 3 — FALLBACK TO PADDLEOCR
+    if (weak || !hasHindi) {
+      console.log('Switching to PaddleOCR...');
+      const paddleText = await runPaddleOCR(imagePath);
+
+      if (paddleText && paddleText.length > extractedText.length) {
+        console.log('[PADDLE]', paddleText);
+        extractedText = paddleText;
       }
     }
 
