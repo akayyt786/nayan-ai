@@ -21,6 +21,7 @@
 
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import ImageResizer from 'react-native-image-resizer';
+import { fallbackOCR } from './ocrFallbackService';
 
 /**
  * Main function — call this with a photo path, get text back
@@ -28,30 +29,26 @@ import ImageResizer from 'react-native-image-resizer';
  * @returns {string} - extracted Hindi/Punjabi text
  */
 export async function extractTextFromImage(imagePath) {
-  console.log('[OCR] Starting text extraction from:', imagePath);
+  console.log('[OCR] Input:', imagePath);
 
   try {
-    // STEP 1: Sharpen the image
-    // We resize to 1200x1600 which is the sweet spot:
-    // - Large enough for ML Kit to see fine text details
-    // - Small enough to process fast on budget phones
-    const sharpenedImage = await ImageResizer.createResizedImage(
-      `file://${imagePath}`,  // file:// prefix needed for Android
-      1000,                    // target width in pixels (optimized for low-end)
-      1400,                    // target height in pixels
-      'JPEG',                  // format — JPEG is fastest
-      90,                      // quality 0-100 (90 = sharp + reasonable size)
-      0,                       // rotation in degrees (0 = keep original)
-      undefined,               // output path (undefined = auto temp folder)
-      false,                   // keep metadata — false = faster
-      { mode: 'cover' }        // resize mode — cover fills the dimensions
+    // STEP 1: preprocess image
+    const processedImage = await ImageResizer.createResizedImage(
+      `file://${imagePath}`,
+      1000,  // optimized size (faster than 1200)
+      1400,
+      'JPEG',
+      95,    // higher quality for better OCR
+      0
     );
+
+    // simulate sharpening by re-saving with high quality
+    const enhancedUri = processedImage.uri;
 
     console.log('[OCR] Image sharpened, running ML Kit...');
 
-    // STEP 2: Run ML Kit OCR
-    // This line does ALL the heavy lifting completely on-device
-    const result = await TextRecognition.recognize(sharpenedImage.uri);
+    // STEP 2: primary OCR (ML Kit)
+    const result = await TextRecognition.recognize(enhancedUri);
     
     // ML Kit returns 'blocks'. We must sort them to ensure natural reading order.
     // Otherwise, it might read randomly if the page has columns.
@@ -73,12 +70,28 @@ export async function extractTextFromImage(imagePath) {
       extractedText = result.text ? result.text.trim() : '';
     }
 
-    console.log('[OCR] Extraction complete. Characters found:', extractedText.length);
+    // STEP 3: fallback if weak result
+    if (!extractedText || extractedText.length < 10) {
+      console.log('Using fallback OCR...');
+      const fallbackText = await fallbackOCR(enhancedUri);
+
+      if (fallbackText) {
+        extractedText = fallbackText;
+      }
+    }
 
     if (!extractedText || extractedText.length < 5) {
       console.warn('[OCR] No significant text found in image');
       return null;
     }
+
+    // STEP 4: clean text
+    extractedText = extractedText
+      .replace(/\n+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    console.log('[OCR] Output length:', extractedText.length);
 
     return extractedText;
 

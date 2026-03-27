@@ -112,9 +112,9 @@ export default function CameraScreen({ onPhotoTaken, isProcessing, triggerScan, 
       {/* Premium Guidance Overlays - Glass style */}
       {!isProcessing && (
         <View style={styles.guidanceContainer}>
-          <Text style={styles.guidanceText}>📸 Move closer</Text>
-          <Text style={styles.guidanceText}>📍 Hold steady</Text>
-          <Text style={styles.guidanceText}>💡 Good lighting</Text>
+          <Text style={styles.guidanceText}>📸 Move closer to text</Text>
+          <Text style={styles.guidanceText}>📍 Hold phone steady</Text>
+          <Text style={styles.guidanceText}>💡 Good lighting required</Text>
           {autoScanEnabled && (
             <View style={styles.liveIndicator}>
               <View style={styles.liveDot} />
