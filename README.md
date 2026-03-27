@@ -1,67 +1,136 @@
-# 👁️ NayanAI — The Eye for Learning
+<div align="center">
+  <img src="nayan%20ai%20logo.png" alt="NayanAI Logo" width="150" height="auto" />
+  <h1>👁️ NayanAI — The Eye for Learning</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status: Production](https://img.shields.io/badge/Status-Production-success.svg)](#)
-[![Offline: 100%](https://img.shields.io/badge/Offline-100%25-blue.svg)](#)
+  <p>
+    <strong>A 100% Offline, Agentic AI Reading Assistant for Visually Impaired Children</strong>
+  </p>
 
-**NayanAI** is a groundbreaking assistive technology application designed for visually impaired children. It transforms printed textbooks into simplified, natural-sounding speech—entirely **offline**. Built to bridge the educational gap, NayanAI empowers children to learn independently without needing an internet connection.
-
----
-
-## ✨ Key Features
-
-### 🚀 100% Offline Pipeline
-- **Zero Internet Requirement**: Works in airplane mode on day one.
-- **On-Device OCR**: Uses high-speed ML Kit technology for local text extraction.
-- **Native VITS TTS**: Features a custom, high-quality natural voice engine (via ONNX Runtime).
-
-### 📖 Live Mode (Auto-Reading)
-- **Hands-Free Experience**: Point the camera at a book, and the app automatically detects and reads the text every 4 seconds.
-- **Smart Deduplication**: The app remembers what it just read and won't repeat itself unless the page changes.
-
-### 🧑‍🏫 Child-Friendly Intelligence
-- **Text Simplification**: Automatically simplifies complex textbook language into easy-to-understand sentences for children.
-- **Deep Male Voice**: Tuned for maximum clarity with a deep, steady pitch (0.8) to aid concentration.
-
-### ♿ Accessibility First
-- **High-Contrast UI**: Designed for low-vision users and teachers.
-- **Haptic Feedback**: High-response vibration for successful captures.
-- **Audio Guidance**: Voice prompts guide the user through every stage (Scanning, Reading, Explaining).
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![React Native](https://img.shields.io/badge/React_Native-0.83.1-61DAFB?logo=react)](https://reactnative.dev/)
+  [![Offline Strategy](https://img.shields.io/badge/Architecture-100%25_Offline-blue)](#)
+</div>
 
 ---
 
-## 🛠️ Technology Stack
+## 📖 Overview
 
-| Layer | Technology |
-| :--- | :--- |
-| **Framework** | React Native (0.83+) |
-| **OCR Engine** | Google ML Kit (Native Android) |
-| **Inference Engine** | ONNX Runtime (Native Kotlin Bridge) |
-| **TTS Model** | Custom VITS / Coqui (TTS Model) |
-| **Simplification** | Rule-based Local NLP Engine |
-| **Camera** | Vision Camera v4 |
+**NayanAI** is a groundbreaking assistive educational mobile application designed to bridge the accessibility gap for visually impaired children in developing regions. It transforms standard printed Hindi and English textbooks into human-sounding, highly simplified audio—**entirely offline**. 
+
+Operating fluidly without an internet connection, NayanAI utilizes edge-AI algorithms to guarantee privacy, eliminate latency, and make learning universally accessible regardless of geographic or financial constraints.
 
 ---
 
-## 📦 Prerequisites
+## ✨ Core Features
 
-- **Android Device**: Android 8.0+ (Oreo) or higher.
-- **TTS Model Files**: 
-  - Place `model.onnx` and `config.json` in: `android/app/src/main/assets/tts_model/`
+### 🚀 100% Offline AI Pipeline
+- **Zero Internet Requirement**: Completely functional in airplane mode on day one.
+- **On-Device OCR**: Ultra-fast document scanning extracting complex Devanagari blocks instantly.
+- **Edge LLM Inference**: Simplifies dense academic text into easy-to-understand concepts locally using quantized LLMs.
+
+### 🎥 Live Cinematic Mode
+- **Hands-Free Auto-Scanning**: Point the camera at any book; NayanAI automatically detects the page, reads it, and prevents overlapping audio streams intelligently.
+- **Premium Glassmorphism UI**: High-end "Apple Vision" style interface with atmospheric glowing gradients and cinematic video splash screens.
+
+### 🧑‍🏫 Teacher-Like Intelligence
+- **Text Simplification**: The built-in AI doesn't just read; it explains. Hard words are broken down to a child's comprehension level.
+- **Native Custom Voice**: Tuned for maximum clarity, generating a patient, deep, and steady educational tone.
 
 ---
 
-## 🛠️ Performance Highlights
-- **OCR Latency**: <500ms on budget devices.
-- **Audio Caching**: Instant playback for repeated text using hash-based caching.
-- **Optimized Image Processing**: Resizes images for maximum speed without losing accuracy.
+## 🛠️ Technology Stack & Dependencies
+
+NayanAI sits at the bleeding edge of on-device AI integration within mobile ecosystems.
+
+### **Core Framework:**
+- **React Native (v0.83.1)**: The foundation of the cross-platform application.
+
+### **Optical Character Recognition (OCR):**
+- **`@react-native-ml-kit/text-recognition` (v2)**: Leverages Google's on-device ML Kit directly via native bindings for rapid, highly-accurate text extraction (specifically hardened for Hindi).
+- **`react-native-image-resizer`**: Dynamically adjusts camera contrast and scales down megapixels prior to OCR inference for processing speed optimizations on budget Android phones.
+
+### **Large Language Model (LLM) — Text Simplification:**
+- **`@runanywhere/llamacpp` (v0.18.1)**: The core engine powering offline text comprehension.
+- **Model Used**: **SmolLM2-135M** (Quantized). A highly efficient, locally-run Small Language Model that rewrites dense textbook paragraphs into conversational, child-friendly explanations. 
+
+### **Text-to-Speech (TTS):**
+- **Custom Local ONNX VITS Pipeline**: NayanAI relies on a native Kotlin bridge connecting to `onnxruntime-react-native`. It runs specialized Hindi acoustic models (`model.onnx` / `config.json`) natively without requiring the standard Android TTS.
+
+### **Hardware & UI:**
+- **`react-native-vision-camera` (v4.7.3)**: High-performance camera architecture utilizing Frame Processors.
+- **`react-native-video`**: Powers the 1080p offline cinematic splash intro execution.
+- **`react-native-linear-gradient`**: Multi-stop atmospheric rendering.
+
+---
+
+## 📦 Getting Started / Installation Guide
+
+Follow these steps to build and run NayanAI on your local machine.
+
+### **1. Prerequisites**
+Before beginning, ensure you have a proper React Native Android development environment:
+- **Node.js** (v18 or higher)
+- **Java Development Kit (JDK) 17**
+- **Android Studio** (with Android SDK 34, NDK installed)
+- An active Android Emulator or a Physical Device connected via USB debugging.
+
+### **2. Clone the Repository**
+```bash
+git clone https://github.com/akayyt786/nayan-ai.git
+cd nayan-ai/nayan-ai
+```
+
+### **3. Install Dependencies**
+Install all NPM packages.
+```bash
+npm install
+```
+
+### **4. Inject Required AI Models (Crucial Step)**
+Because NayanAI is 100% offline, the raw AI model weights **must** be manually placed in the Android assets folder before compiling.
+
+1. **TTS Model**:
+   Download your preferred VITS ONNX weights and place them here:
+   `android/app/src/main/assets/tts_model/model.onnx`
+   `android/app/src/main/assets/tts_model/config.json`
+
+2. **LLM Model**:
+   Download the **SmolLM2** `.gguf` file and place it here:
+   (Usually configured to load via the RunAnywhere SDK local directory or asset pipeline).
+
+### **5. Run the Application**
+Compile the Native C++ AI libraries and launch the app:
+```bash
+# Start the Metro Bundler
+npm run start
+
+# In a new terminal, build the Android App
+npm run android
+```
+*(Note: Initial Gradle builds will take 5-10 minutes due to the compilation of the on-device C++ LLM/ONNX runtimes.)*
+
+---
+
+## 🧠 System Architecture Flow
+
+```text
+📸 Vision Camera (Captures Frame)
+       ↓
+🖼️ Image Resizer (Compress & Enhance Edge Contrast)
+       ↓
+🔍 ML Kit OCR (Extracts raw Hindi/English text blocks)
+       ↓
+🤖 SmolLM2 LLM via Llama.cpp (Translates & Simplifies text into child logic)
+       ↓
+🔊 Local ONNX TTS Engine (Synthesizes deep, natural, offline audio)
+```
+
+---
+
+## 🤝 Project Origin & Mission
+*Built and engineered to eradicate educational borders. NayanAI believes that vision impairments and lack of internet infrastructure should never be a wall to a child's fundamental right to learn and explore literature.*
 
 ---
 
 ## 📜 License
 This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 🤝 Project Origin
-*Built for the visual empowerment of children in underprivileged regions where internet access is limited but learning is a priority.*
